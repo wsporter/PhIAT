@@ -11,7 +11,9 @@
     v1.0 (9/11/2020) -- Initial script adapted from read_lmf_porter.py
     v1.1 (11/16/2020) -- Script changed to account for CAEN V1290 25ps TDC data
     v1.2 (1/12/2021) -- Script updated for VT2 TDC data
-    Last updated on 4/16/2021
+    v1.3 (7/26/2021) -- Script updated to account for empty files and test data from conditioning/calibrating PPG scheme
+    
+    Last updated on 7/26/2021
     
 """
 from __future__ import division
@@ -41,7 +43,7 @@ if (VT2 and CAEN) == True:
 file_dir = str(sys.argv[1])
 filelist = sorted(glob.glob(file_dir + '/*.lz4') + glob.glob(file_dir + '/*.mid')) # Grabbing all .mid AND .lz4 files in the directory of interest
 
-print(filelist)
+#print(filelist)
 
 time_list = []
 ref_time_list = []
@@ -91,7 +93,6 @@ for mfile in filelist:
         caen_data = mpet_event.caen_tdc_parsed
         caen_data_raw = mpet_event.caen_tdc_raw
         
-        
         for item in caen_data:
             for x_val in item.pos_x_mm: # Loop through ions per trigger
                 event_x_data_caen.append(x_val) # X/Y Position from CAEN TDC
@@ -99,16 +100,25 @@ for mfile in filelist:
                 event_y_data_caen.append(y_val)
             for tof_val in item.mcp_tof_secs:
                 event_tof_data_caen.append(tof_val) # ToF which ends at ion contact with MCP
+                event_trigger_data_caen.append(item.trigger_count)
         
+        """
         last_trig = None
         
+        channel_list = []
         for tdc in caen_data_raw:
-            if tdc.channel_id == 1: # IF 0: Corresponds to timestamp of beginning of ToF measurement // IF 9: Corresponds to Old MCP ASUM signal // -- refer to MPETConstants in titan_data MPET __init__.py for other channel numbers
+            if tdc.trigger_count != last_trig:
+                channel_list = []
+            last_trig = tdc.trigger_count
+            channel_list.append(tdc.channel_id)
+            print(channel_list)
+            print(len(set(channel_list)))
+            if len(set(channel_list)) == 5:
                 event_timestamp_data_caen.append(tdc.timestamp_secs)
                 event_trigger_data_caen.append(tdc.trigger_count)
-                    
-            #last_trig = tdc.trigger_count # The previous trigger is updated to be the current trigger before we cycle through
-
+                channel_list = []
+                #break
+        """    
         # VT2 TDC & LeCroy 1190 #
         
         pos_list = mpet_event.pos_data # X/Y Positions from LC1190
@@ -169,13 +179,20 @@ for mfile in filelist:
     #print('-------tof_data---------',tof_data)
     #print('-------trigger_data---------',trigger_data)
     
+    if x_data.size == 0:
+        print("The following file is empty:")
+        print(fileName)
+        raise TypeError('A file is empty! Please remove the empty file from the directory!')
+    
     file_start = event_UNIX[0] # File start is timestamp of first event
     file_end = event_UNIX[-1] # File end is timestamp of last event
     #print(event_UNIX)
     
     # Constructing EventList #
     
+    #eventList = np.concatenate((x_data.T,y_data.T,tof_data.T),axis=1)
     eventList = np.concatenate((x_data.T,y_data.T,tof_data.T,trigger_data_array.T),axis=1)
+    
     #print(eventList)
     
     # Ion-Ion Interaction Cuts #
@@ -200,6 +217,9 @@ for mfile in filelist:
     
     trap_time = mpet_event.trap_time_ms # Total time ions spend in trap
     
+    if testing == True:
+        trap_time = 100
+        
     gating_rate = 50 # Bin size in time (ms) for ion counts
     
     num_eval = eventList[-1][3]*trap_time/gating_rate # Approx. global event time is (time in trap)*(trigger number)
