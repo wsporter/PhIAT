@@ -127,7 +127,7 @@ mev2kev=1000; %Converts MeV to KeV
 
 %Mass and Error Calculation
 
-ma = (qa * (mb - qb * me) * vb)/(qb * va)
+ma = (qa * (mb - qb * me) * vb)/(qb * va) + qa*me;
 mea = ma *amu2mev*mev2kev  - (amu2mev*mev2kev * iso);
 
 % Finding Unknown Frequency va %
