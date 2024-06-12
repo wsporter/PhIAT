@@ -1,4 +1,4 @@
-%% PhIAT.m
+ %% PhIAT.m
 % 
 % Phase-Imaging Analysis Tool (PhIAT) is an analysis suite that determines the cyclotron frequency of ions in a Penning trap, measured
 % through PI-ICR, by fitting Guassians to positions recorded on an PS-MCP.
@@ -46,7 +46,7 @@ function varargout = PhIAT(varargin)
 
 % Edit the above text to modify the response to help PhIAT
 
-% Last Modified by GUIDE v2.5 30-Mar-2021 15:13:53
+% Last Modified by GUIDE v2.5 10-May-2024 15:35:32
 
 % Begin initialization code - DO NOT EDIT
 
@@ -378,6 +378,7 @@ while i <= number_of_files; % Loop through files in list of files
     [dim_cent,len_cent] = size(centers);
     [dim_dataclust,len_dataclust] = size(data2cluster);
     
+    
     k = 1;
     k_color = 1;
     cVec = {'#5DADE2','#9B59B6','#1D8348','#00FFFF','#FFCCFF','#9933FF','#82E0AA','#EB6E60','#000000','#660066','#FFFF99','#732626','#66FF33'};
@@ -385,7 +386,7 @@ while i <= number_of_files; % Loop through files in list of files
     
     myClustCen_list = [];
     while k <= len_cent
-        myMembers = cluster2dataCell{k}; % Grab all counts corresponding to a cluster
+        myMembers = cluster2dataCell{k} % Grab all counts corresponding to a cluster
         [dim_mM,len_mM] = size(myMembers);
         figure(i)
         ppc = str2double(get(handles.ppc,'String'));
@@ -507,6 +508,7 @@ num_act_files = ctr; % Total number of final files
 
 ref_idx = find(file_num_list == num_act_files + 1); % Find beginning of reference file data in our structures
 ref_idx = ref_idx - 1; % ID of end of final file data
+ref_idx
 x_val_act = x_val(1:ref_idx); % Creating final file data structures
 y_val_act = y_val(1:ref_idx);
 x_err_act = x_err(1:ref_idx);
@@ -658,7 +660,6 @@ while k <= ref_idx
     
     k = k + 1;
 end
-
     % Cyclotron Frequency from Num. Turns %%
 
 i = 1;
@@ -743,9 +744,9 @@ if handles.checkbox_finish_analysis.Value % Finish analysis iff Finish Analysis 
     
     if handles.angle_correction_impurebeam.Value
         
-        cyc_freq_list = [1081187.075,1081165.783,1081193.095]; % List of frequency of all species present in files
-        isotope_percentage_list = [0.071544715,0.144715447,0.699186992]; % Normalized percentage of counts in species spots in files (same order as above!)
-        cyc_freq_actual = 1081183.638; % Frequency of species of interest
+        cyc_freq_list = [690554.9188,690583.8365]; % List of frequency of all non-IOI species present in files
+        isotope_percentage_list = [0.73835038,0.18283952]; % Normalized percentage of counts in non-IOI species spots in files (same order as above!)
+        cyc_freq_actual = 690542.5993; % Frequency of species of interest
         correction_sum = 0;
         i = 1;
         size_cyc_list = size(cyc_freq_list);
@@ -755,7 +756,7 @@ if handles.checkbox_finish_analysis.Value % Finish analysis iff Finish Analysis 
             i = i + 1;
         end
 
-        t_exc = 0.0004904; % t_exc = Dipole Excitation Time + Quadrupole Excitation Time
+        t_exc = 0.000484; % t_exc = Dipole Excitation Time + Quadrupole Excitation Time
         angle_shift = 2*pi*t_exc*correction_sum
         
         % Used if applying a global correction or global correction extreme
@@ -1619,9 +1620,11 @@ radius_list = cat(1,radius_list,r_list); % Add radius fit results to global radi
 
 if file_number_counter < number_of_files
     file_number_counter = file_number_counter + 1;
-    set(handles.csr_csv, 'String', data_files{1}{file_number_counter}); % Move to the next file
+    set(handles.filename, 'String', data_files{1}{file_number_counter});
+    set(handles.csr_csv, 'String', data_files{1}{file_number_counter});% Move to the next file
 else
-    set(handles.csr_csv, 'String', 'No More Data Files Left');
+    set(handles.filename, 'String', 'No More Data Files Left');
+    set(handles.csr_csv, 'String', data_files{1}{file_number_counter});
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1882,22 +1885,22 @@ while k <= husker
 end
 
 %% Frequency Correction for Impure Beams
-% 
-% cyc_freq_list = [1081187.075,1081165.783,1081193.095];
-% isotope_percentage_list = [0.071544715,0.144715447,0.699186992];
-% cyc_freq_actual = 1081183.638;
-% correction_sum = 0;
-% i = 1;
-% size_cyc_list = size(cyc_freq_list);
-% 
-% while i <= size_cyc_list(2)
-%     correction_sum = correction_sum + isotope_percentage_list(i)*(-cyc_freq_actual + cyc_freq_list(i));
-%     i = i + 1;
-% end
-%  
-% t_exc = 0.0004904;
-% angle_shift = 2*pi*t_exc*correction_sum
-% A1 = A1 + angle_shift
+
+cyc_freq_list = [690554.9188,690583.8365,690542.5952];
+isotope_percentage_list = [0.73835038,0.18283952,0.0748101];
+cyc_freq_actual = 690542.9588;
+correction_sum = 0;
+i = 1;
+size_cyc_list = size(cyc_freq_list);
+
+while i <= size_cyc_list(2)
+    correction_sum = correction_sum + isotope_percentage_list(i)*(-cyc_freq_actual + cyc_freq_list(i));
+    i = i + 1;
+end
+ 
+t_exc = 0.000484;
+angle_shift = 2*pi*t_exc*correction_sum
+A1 = A1 + angle_shift
 
 %% Frequency
 % A1(1) = A1(1) + 0.003914499
@@ -2003,10 +2006,16 @@ while j <= size_time(1)
 end
 
 size_time = size(time);
+fixed_amp = -0.012573197;
 
-sin_func = @(b,x) b(1) + (b(2))*sin((w_minus)*x + b(3)) % Function for w_c sine fit
+if handles.fixed_amp_check.Value
+    sin_func = @(b,x) b(1) + (str2double(get(handles.fixed_amp_num,'String')))*sin((w_minus)*x + b(2)) % Function for w_c sine fit, version with FIXED amplitude
+    sine_fit = fitnlm(time, final_freq, sin_func,[frequencycs,1], 'Weights',Error.^-2) % Perform weighted LM-LS fit for w_c, normal version with FIXED amplitude
+else
+    sin_func = @(b,x) b(1) + (b(2))*sin((w_minus)*x + b(3)) % Function for w_c sine fit, normal version with unfixed amplitude
+    sine_fit = fitnlm(time, final_freq, sin_func,[frequencycs,.01,1], 'Weights',Error.^-2) % Perform weighted LM-LS fit for w_c, normal version with unfixed amplitude
 
-sine_fit = fitnlm(time, final_freq, sin_func,[frequencycs,.01,1], 'Weights',Error.^-2) % Perform weighted LM-LS fit for w_c
+end
 
 sine_radius_fit = fitnlm(time, actual_radii,'y ~ b0 + b1*sin(b2*x1 + b3)',[4,.01,w_minus,1],'Weights',actual_radii_error.^-2)
 %sine_radius_fit = fitnlm(time, actual_radii,'y ~ b0 + b1*sin(b2*x1 + b3)',[4,.01,w_minus,1]) % Perform weighted LM-LS fit for radius
@@ -2028,9 +2037,17 @@ sdev1 = sine_radius_fit.Coefficients.SE;
 x = [time(1):.0000001:time(length(time))];
 
 % Define Model Results for w_c
-y = coeff(1) + (coeff(2))*sin((w_minus)*x + coeff(3));
+if handles.fixed_amp_check.Value
+    y = coeff(1) + (str2double(get(handles.fixed_amp_num,'String')))*sin((w_minus)*x + coeff(2)); % for fixed amp
+else
+    y = coeff(1) + (coeff(2))*sin((w_minus)*x + coeff(3)); % for unfixed amp
+end
 
-y_model = coeff(1) + (coeff(2))*sin((w_minus)*time + coeff(3));
+if handles.fixed_amp_check.Value
+    y_model = coeff(1) + (str2double(get(handles.fixed_amp_num,'String')))*sin((w_minus)*time + coeff(2));
+else
+    y_model = coeff(1) + (coeff(2))*sin((w_minus)*time + coeff(3));
+end
 
 diff = y_model - final_freq;
 ii = 1;
@@ -3375,6 +3392,38 @@ function wminus_Callback(hObject, eventdata, handles)
 % --- Executes during object creation, after setting all properties.
 function wminus_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to wminus (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in fixed_amp_check.
+function fixed_amp_check_Callback(hObject, eventdata, handles)
+% hObject    handle to fixed_amp_check (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of fixed_amp_check
+
+
+
+function fixed_amp_num_Callback(hObject, eventdata, handles)
+% hObject    handle to fixed_amp_num (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of fixed_amp_num as text
+%        str2double(get(hObject,'String')) returns contents of fixed_amp_num as a double
+
+
+% --- Executes during object creation, after setting all properties.
+function fixed_amp_num_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to fixed_amp_num (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 
