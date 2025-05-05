@@ -906,9 +906,13 @@ if handles.checkbox_finish_analysis.Value % Finish analysis iff Finish Analysis 
 
     end
     
-    sin_func = @(b,x) b(1) + (b(2))*sin((w_minus)*x + b(3)); % Function for w_c sine fit
-    
-    sine_fit = fitnlm(time_final, freq_act, sin_func,[frequencycs,.01,1], 'Weights',Error.^-2) % Perform weighted LM-LS fit for w_c
+    if handles.fixed_amp_check.Value
+        sin_func = @(b,x) b(1) + (str2double(get(handles.fixed_amp_num,'String')))*sin((w_minus)*x + b(2)) % Function for w_c sine fit, version with FIXED amplitude
+        sine_fit = fitnlm(time_final, freq_act, sin_func,[frequencycs,1], 'Weights',Error.^-2) % Perform weighted LM-LS fit for w_c, normal version with FIXED amplitude
+    else
+        sin_func = @(b,x) b(1) + (b(2))*sin((w_minus)*x + b(3)) % Function for w_c sine fit, normal version with unfixed amplitude
+        sine_fit = fitnlm(time_final, freq_act, sin_func,[frequencycs,.01,1], 'Weights',Error.^-2) % Perform weighted LM-LS fit for w_c, normal version with unfixed amplitude
+    end
     
     sine_radius_fit = fitnlm(time_final, actual_radii,'y ~ b0 + b1*sin(b2*x1 + b3)',[4,.01,w_minus,1],'Weights',actual_radii_error.^-2)
     %sine_radius_fit = fitnlm(time_final, actual_radii,'y ~ b0 + b1*sin(b2*x1 + b3)',[4,.01,w_minus,1]) % Perform weighted LM-LS fit for radius
@@ -929,9 +933,17 @@ if handles.checkbox_finish_analysis.Value % Finish analysis iff Finish Analysis 
 
     x = [time_final(1):.0000001:time_final(length(time_final))];
 
-    y = coeff(1) + (coeff(2))*sin((w_minus)*x + coeff(3));
+    if handles.fixed_amp_check.Value
+        y = coeff(1) + (str2double(get(handles.fixed_amp_num,'String')))*sin((w_minus)*x + coeff(2)); % for fixed amp
+    else
+        y = coeff(1) + (coeff(2))*sin((w_minus)*x + coeff(3)); % for unfixed amp
+    end
 
-    y_model = coeff(1) + (coeff(2))*sin((w_minus)*time_final + coeff(3));
+    if handles.fixed_amp_check.Value
+        y_model = coeff(1) + (str2double(get(handles.fixed_amp_num,'String')))*sin((w_minus)*time_final + coeff(2));
+    else
+        y_model = coeff(1) + (coeff(2))*sin((w_minus)*time_final + coeff(3));
+    end
 
     diff = y_model - freq_act;
     ii = 1;
@@ -2006,7 +2018,6 @@ while j <= size_time(1)
 end
 
 size_time = size(time);
-fixed_amp = -0.012573197;
 
 if handles.fixed_amp_check.Value
     sin_func = @(b,x) b(1) + (str2double(get(handles.fixed_amp_num,'String')))*sin((w_minus)*x + b(2)) % Function for w_c sine fit, version with FIXED amplitude
